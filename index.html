@@ -594,10 +594,12 @@
       }
     };
 
-    const syncGlobalInputs = () => {
-      els.packSize.value = state.globals.packSize;
-      els.palletTon.value = state.globals.palletTon;
-      els.truckTon.value = state.globals.truckTon;
+    const syncGlobalInputs = ({ syncValues = true } = {}) => {
+      if (syncValues) {
+        els.packSize.value = state.globals.packSize;
+        els.palletTon.value = state.globals.palletTon;
+        els.truckTon.value = state.globals.truckTon;
+      }
       const truckLimit = getTruckLimit();
       els.truckLimit.textContent = fmt(truckLimit);
       const globalOk = state.globals.packSize > 0 && state.globals.palletTon > 0 && state.globals.truckTon > 0;
@@ -620,12 +622,44 @@
       return `<input class="input-cell" data-row="${rowIndex}" data-key="${key}" type="${type}" inputmode="${inputmode}" value="${safe}">`;
     };
 
+    const updateRowResult = (index) => {
+      const rowElement = els.rows.querySelector(`tr[data-row-index="${index}"]`);
+      if (!rowElement || !state.rows[index]) return;
+
+      const result = calculateRow(state.rows[index]);
+      const values = {
+        needSale: result.needSale,
+        signedTurnover: result.signedTurnover,
+        canOrder: result.canOrder,
+        afterOrderStock: result.afterOrderStock,
+        afterOrderTurnover: result.afterOrderTurnover
+      };
+
+      Object.entries(values).forEach(([key, value]) => {
+        const cell = rowElement.querySelector(`[data-result="${key}"]`);
+        if (cell) cell.textContent = fmt(value);
+      });
+
+      const statusCell = rowElement.querySelector("[data-result=\"status\"]");
+      if (statusCell) {
+        statusCell.textContent = result.status;
+        statusCell.className = result.error ? "row-status error" : "row-status";
+      }
+    };
+
+    const updateCalculatedResults = () => {
+      syncGlobalInputs({ syncValues: false });
+      state.rows.forEach((_, index) => updateRowResult(index));
+      updateSingleCards();
+      save();
+    };
+
     const renderRows = () => {
       els.rows.innerHTML = state.rows.map((row, index) => {
         const result = calculateRow(row);
         const statusClass = result.error ? "row-status error" : "row-status";
         return `
-          <tr>
+          <tr data-row-index="${index}">
             <td>${index + 1}</td>
             <td>${input(index, "dealer", row.dealer, "text")}</td>
             <td>${input(index, "stock", row.stock)}</td>
@@ -633,12 +667,12 @@
             <td>${input(index, "targetDays", row.targetDays)}</td>
             <td>${input(index, "orderLimitDays", row.orderLimitDays)}</td>
             <td>${input(index, "signedToday", row.signedToday)}</td>
-            <td class="process-cell">${fmt(result.needSale)}</td>
-            <td class="process-cell">${fmt(result.signedTurnover)}</td>
-            <td class="result-cell">${fmt(result.canOrder)}</td>
-            <td class="result-cell">${fmt(result.afterOrderStock)}</td>
-            <td class="result-cell">${fmt(result.afterOrderTurnover)}</td>
-            <td class="${statusClass}">${result.status}</td>
+            <td class="process-cell" data-result="needSale">${fmt(result.needSale)}</td>
+            <td class="process-cell" data-result="signedTurnover">${fmt(result.signedTurnover)}</td>
+            <td class="result-cell" data-result="canOrder">${fmt(result.canOrder)}</td>
+            <td class="result-cell" data-result="afterOrderStock">${fmt(result.afterOrderStock)}</td>
+            <td class="result-cell" data-result="afterOrderTurnover">${fmt(result.afterOrderTurnover)}</td>
+            <td class="${statusClass}" data-result="status">${result.status}</td>
             <td><button class="btn" data-delete="${index}">删除</button></td>
           </tr>
         `;
@@ -654,7 +688,7 @@
 
     const setGlobal = (key, value) => {
       state.globals[key] = toNumber(value);
-      render();
+      updateCalculatedResults();
     };
 
     const csvEscape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
@@ -705,7 +739,9 @@
       const key = target.dataset.key;
       if (!Number.isInteger(rowIndex) || !key) return;
       state.rows[rowIndex][key] = key === "dealer" ? target.value : toNumber(target.value);
-      render();
+      updateRowResult(rowIndex);
+      updateSingleCards();
+      save();
     });
 
     els.rows.addEventListener("click", (event) => {
