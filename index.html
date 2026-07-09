@@ -1,0 +1,741 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="周转天数与可上单数量在线计算器">
+  <title>周转天数计算器</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --panel: #ffffff;
+      --text: #1f2937;
+      --muted: #667085;
+      --line: #d7dde7;
+      --blue: #1769aa;
+      --blue-dark: #0f4f84;
+      --yellow: #fff7d6;
+      --gray: #f6f8fa;
+      --green: #eaf7ef;
+      --green-text: #0f7a4f;
+      --red: #b42318;
+      --orange: #a15c00;
+      --shadow: 0 14px 34px rgba(31, 41, 55, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    button,
+    input {
+      font: inherit;
+    }
+
+    main {
+      width: min(1180px, calc(100% - 28px));
+      margin: 0 auto;
+      padding: 24px 0 40px;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 16px;
+      align-items: end;
+      margin-bottom: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 28px;
+      line-height: 1.2;
+      font-weight: 760;
+    }
+
+    .subtitle {
+      margin: 7px 0 0;
+      color: var(--muted);
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .btn {
+      min-height: 38px;
+      padding: 0 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    .btn.primary {
+      background: var(--blue);
+      border-color: var(--blue);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .btn:hover {
+      filter: brightness(0.98);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 340px 1fr;
+      gap: 16px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .panel h2 {
+      margin: 0;
+      padding: 15px 16px;
+      border-bottom: 1px solid var(--line);
+      background: #fafbfc;
+      font-size: 17px;
+      line-height: 1.3;
+    }
+
+    .body {
+      padding: 16px;
+    }
+
+    .stack {
+      display: grid;
+      gap: 12px;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    input {
+      width: 100%;
+      height: 40px;
+      padding: 0 10px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      outline: none;
+      color: var(--text);
+      background: #fff;
+    }
+
+    input:focus {
+      border-color: var(--blue);
+      box-shadow: 0 0 0 3px rgba(23, 105, 170, 0.13);
+    }
+
+    .input-cell {
+      background: var(--yellow);
+    }
+
+    .legend {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .legend span {
+      min-height: 34px;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    .legend .yellow { background: var(--yellow); color: #7a4b00; }
+    .legend .gray { background: var(--gray); color: #475467; }
+    .legend .green { background: var(--green); color: var(--green-text); }
+    .legend .blue { background: var(--blue); color: #fff; }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .card {
+      min-height: 102px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--green);
+    }
+
+    .card small {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .card strong {
+      display: block;
+      color: var(--green-text);
+      font-size: 30px;
+      line-height: 1;
+      word-break: break-all;
+    }
+
+    .status {
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--green-text);
+      font-weight: 700;
+    }
+
+    .status.warn {
+      color: var(--orange);
+      background: #fff9eb;
+      border-color: #f4d3a1;
+    }
+
+    .status.error {
+      color: var(--red);
+      background: #fff1f0;
+      border-color: #f2b8b5;
+    }
+
+    .table-wrap {
+      width: 100%;
+      overflow-x: auto;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 980px;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      text-align: right;
+      vertical-align: middle;
+      white-space: nowrap;
+    }
+
+    th {
+      background: var(--blue);
+      color: #fff;
+      font-size: 13px;
+      font-weight: 700;
+      text-align: center;
+    }
+
+    td:first-child,
+    th:first-child,
+    td:nth-child(2),
+    th:nth-child(2) {
+      text-align: left;
+    }
+
+    td input {
+      height: 34px;
+      min-width: 88px;
+      text-align: right;
+    }
+
+    td:nth-child(2) input {
+      min-width: 150px;
+      text-align: left;
+    }
+
+    .result-cell {
+      background: var(--green);
+      color: var(--green-text);
+      font-weight: 700;
+    }
+
+    .process-cell {
+      background: var(--gray);
+      color: #475467;
+    }
+
+    .row-status {
+      font-weight: 700;
+      color: var(--green-text);
+    }
+
+    .row-status.error {
+      color: var(--red);
+    }
+
+    .note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.65;
+    }
+
+    .note code {
+      padding: 2px 5px;
+      border-radius: 5px;
+      background: #eef2f6;
+      color: var(--text);
+    }
+
+    .mobile-help {
+      display: none;
+      margin: 10px 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    @media (max-width: 980px) {
+      .hero,
+      .grid {
+        grid-template-columns: 1fr;
+      }
+
+      .actions {
+        justify-content: flex-start;
+      }
+
+      .cards,
+      .legend {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .mobile-help {
+        display: block;
+      }
+    }
+
+    @media (max-width: 560px) {
+      main {
+        width: min(100% - 18px, 1180px);
+        padding-top: 16px;
+      }
+
+      h1 {
+        font-size: 24px;
+      }
+
+      .cards,
+      .legend {
+        grid-template-columns: 1fr;
+      }
+
+      .card strong {
+        font-size: 26px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <section class="hero">
+      <div>
+        <h1>周转天数计算器</h1>
+        <p class="subtitle">按最新规则计算：先降周转，再按箱托关系和整车上限得出“可上单”。数据只保存在当前浏览器本机。</p>
+      </div>
+      <div class="actions">
+        <button class="btn" id="addRow">新增一行</button>
+        <button class="btn" id="exportCsv">导出 CSV</button>
+        <button class="btn" id="clearAll">清空数据</button>
+        <button class="btn primary" id="loadSample">载入示例</button>
+      </div>
+    </section>
+
+    <section class="grid">
+      <aside class="panel">
+        <h2>全局参数</h2>
+        <div class="body stack">
+          <label>
+            箱托关系
+            <input class="input-cell" id="packSize" type="number" min="0" step="1" inputmode="decimal" value="180">
+          </label>
+          <label>
+            单托吨位
+            <input class="input-cell" id="palletTon" type="number" min="0" step="0.001" inputmode="decimal" value="1.481">
+          </label>
+          <label>
+            整车吨位
+            <input class="input-cell" id="truckTon" type="number" min="0" step="0.001" inputmode="decimal" value="32.5">
+          </label>
+          <div class="card">
+            <small>整车数量上限</small>
+            <strong id="truckLimit">-</strong>
+          </div>
+          <div class="status" id="globalStatus">OK</div>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <h2>单品核心结果</h2>
+        <div class="body">
+          <div class="legend" aria-label="颜色说明">
+            <span class="yellow">黄色：手动输入</span>
+            <span class="gray">灰色：自动计算</span>
+            <span class="green">绿色：核心结果</span>
+            <span class="blue">蓝色：标题/表头</span>
+          </div>
+          <div class="cards">
+            <div class="card">
+              <small>需卖 / 降库</small>
+              <strong id="singleNeedSale">-</strong>
+            </div>
+            <div class="card">
+              <small>签收后周转</small>
+              <strong id="singleSignedTurnover">-</strong>
+            </div>
+            <div class="card">
+              <small>可上单</small>
+              <strong id="singleCanOrder">-</strong>
+            </div>
+            <div class="card">
+              <small>上单后周转</small>
+              <strong id="singleAfterTurnover">-</strong>
+            </div>
+          </div>
+          <p class="note">
+            默认取第 1 行作为单品核心结果。公式：<code>S=N/M*24</code>；<code>可上单 = MIN(整托可上单, 整车数量上限)</code>；整托可上单一定是箱托关系的整数倍。
+          </p>
+        </div>
+      </section>
+    </section>
+
+    <section class="panel" style="margin-top:16px;">
+      <h2>批量数据</h2>
+      <div class="body">
+        <p class="mobile-help">手机上可以左右滑动表格。</p>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>序号</th>
+                <th>经销商名称</th>
+                <th>现有库存 N</th>
+                <th>当前周转 M</th>
+                <th>目标周转</th>
+                <th>上单后上限</th>
+                <th>今日已签收</th>
+                <th>需卖/降库</th>
+                <th>签收后周转</th>
+                <th>可上单</th>
+                <th>上单后库存</th>
+                <th>上单后周转</th>
+                <th>提示</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <p class="note">
+          计算口径：今日已签收大于需卖数量时，按今日已签收参与计算；可上单按整托向下取整，避免超过上单后上限。
+        </p>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const storageKey = "turnover-calculator-v2";
+
+    const sampleRows = [
+      { dealer: "XX商贸有限公司", stock: 504, currentDays: 15, targetDays: 15, orderLimitDays: 30, signedToday: 0 },
+      { dealer: "XX商贸有限公司", stock: 2800, currentDays: 15, targetDays: 15, orderLimitDays: 30, signedToday: 0 }
+    ];
+
+    const state = {
+      globals: {
+        packSize: 180,
+        palletTon: 1.481,
+        truckTon: 32.5
+      },
+      rows: structuredClone(sampleRows)
+    };
+
+    const els = {
+      packSize: document.getElementById("packSize"),
+      palletTon: document.getElementById("palletTon"),
+      truckTon: document.getElementById("truckTon"),
+      truckLimit: document.getElementById("truckLimit"),
+      globalStatus: document.getElementById("globalStatus"),
+      rows: document.getElementById("rows"),
+      addRow: document.getElementById("addRow"),
+      exportCsv: document.getElementById("exportCsv"),
+      clearAll: document.getElementById("clearAll"),
+      loadSample: document.getElementById("loadSample"),
+      singleNeedSale: document.getElementById("singleNeedSale"),
+      singleSignedTurnover: document.getElementById("singleSignedTurnover"),
+      singleCanOrder: document.getElementById("singleCanOrder"),
+      singleAfterTurnover: document.getElementById("singleAfterTurnover")
+    };
+
+    const toNumber = (value) => {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : 0;
+    };
+
+    const fmt = (value, digits = 0) => {
+      if (!Number.isFinite(value)) return "-";
+      return new Intl.NumberFormat("zh-CN", { maximumFractionDigits: digits }).format(value);
+    };
+
+    const roundUp = (value) => Math.ceil(value);
+    const roundDown = (value) => Math.floor(value);
+
+    const getTruckLimit = () => {
+      const { packSize, palletTon, truckTon } = state.globals;
+      if (packSize <= 0 || palletTon <= 0 || truckTon <= 0) return 0;
+      return roundDown(truckTon / palletTon) * packSize;
+    };
+
+    const calculateRow = (row) => {
+      const stock = toNumber(row.stock);
+      const currentDays = toNumber(row.currentDays);
+      const targetDays = toNumber(row.targetDays);
+      const orderLimitDays = toNumber(row.orderLimitDays);
+      const signedToday = toNumber(row.signedToday);
+      const packSize = toNumber(state.globals.packSize);
+      const truckLimit = getTruckLimit();
+
+      if (stock < 0) return { status: "库存不能小于0", error: true };
+      if (currentDays <= 0) return { status: "当前周转必须大于0", error: true };
+      if (targetDays < 0) return { status: "目标周转不能小于0", error: true };
+      if (targetDays > orderLimitDays) return { status: "目标周转大于上限", error: true };
+
+      const sales24 = stock / currentDays * 24;
+      const needRaw = (24 * stock - targetDays * sales24) / (targetDays + 24);
+      const needSale = Math.max(0, roundUp(needRaw));
+
+      if (needSale > stock) {
+        return {
+          sales24,
+          needSale,
+          status: "需卖数量超过库存",
+          error: true
+        };
+      }
+
+      const actualSales = Math.min(stock, Math.max(signedToday, needSale));
+      const signedStock = Math.max(0, stock - actualSales);
+      const newDailySales = (sales24 + actualSales) / 24;
+      const signedTurnover = newDailySales > 0 ? roundUp(signedStock / newDailySales) : 0;
+      const theoreticalCanOrder = Math.max(0, newDailySales * orderLimitDays - signedStock);
+      const wholePalletCanOrder = packSize > 0
+        ? roundDown(theoreticalCanOrder / packSize) * packSize
+        : roundDown(theoreticalCanOrder);
+      const canOrder = truckLimit > 0
+        ? Math.min(wholePalletCanOrder, truckLimit)
+        : wholePalletCanOrder;
+      const afterOrderStock = signedStock + canOrder;
+      const afterOrderTurnover = newDailySales > 0 ? roundUp(afterOrderStock / newDailySales) : 0;
+      const status = afterOrderTurnover > orderLimitDays ? "超过上限，已自动压低可上单" : "OK";
+
+      return {
+        sales24,
+        needSale,
+        actualSales,
+        signedStock,
+        signedTurnover,
+        theoreticalCanOrder,
+        wholePalletCanOrder,
+        truckLimit,
+        canOrder,
+        afterOrderStock,
+        afterOrderTurnover,
+        status,
+        error: status !== "OK"
+      };
+    };
+
+    const save = () => {
+      localStorage.setItem(storageKey, JSON.stringify(state));
+    };
+
+    const load = () => {
+      try {
+        const stored = JSON.parse(localStorage.getItem(storageKey));
+        if (!stored) return;
+        state.globals = { ...state.globals, ...stored.globals };
+        state.rows = Array.isArray(stored.rows) && stored.rows.length ? stored.rows : structuredClone(sampleRows);
+      } catch {
+        state.rows = structuredClone(sampleRows);
+      }
+    };
+
+    const syncGlobalInputs = () => {
+      els.packSize.value = state.globals.packSize;
+      els.palletTon.value = state.globals.palletTon;
+      els.truckTon.value = state.globals.truckTon;
+      const truckLimit = getTruckLimit();
+      els.truckLimit.textContent = fmt(truckLimit);
+      const globalOk = state.globals.packSize > 0 && state.globals.palletTon > 0 && state.globals.truckTon > 0;
+      els.globalStatus.textContent = globalOk ? "OK" : "请填写完整全局参数";
+      els.globalStatus.className = globalOk ? "status" : "status warn";
+    };
+
+    const updateSingleCards = () => {
+      const first = state.rows[0];
+      const result = first ? calculateRow(first) : null;
+      els.singleNeedSale.textContent = result && Number.isFinite(result.needSale) ? fmt(result.needSale) : "-";
+      els.singleSignedTurnover.textContent = result && Number.isFinite(result.signedTurnover) ? fmt(result.signedTurnover) : "-";
+      els.singleCanOrder.textContent = result && Number.isFinite(result.canOrder) ? fmt(result.canOrder) : "-";
+      els.singleAfterTurnover.textContent = result && Number.isFinite(result.afterOrderTurnover) ? fmt(result.afterOrderTurnover) : "-";
+    };
+
+    const input = (rowIndex, key, value, type = "number") => {
+      const safe = String(value ?? "").replaceAll('"', "&quot;");
+      const inputmode = type === "text" ? "text" : "decimal";
+      return `<input class="input-cell" data-row="${rowIndex}" data-key="${key}" type="${type}" inputmode="${inputmode}" value="${safe}">`;
+    };
+
+    const renderRows = () => {
+      els.rows.innerHTML = state.rows.map((row, index) => {
+        const result = calculateRow(row);
+        const statusClass = result.error ? "row-status error" : "row-status";
+        return `
+          <tr>
+            <td>${index + 1}</td>
+            <td>${input(index, "dealer", row.dealer, "text")}</td>
+            <td>${input(index, "stock", row.stock)}</td>
+            <td>${input(index, "currentDays", row.currentDays)}</td>
+            <td>${input(index, "targetDays", row.targetDays)}</td>
+            <td>${input(index, "orderLimitDays", row.orderLimitDays)}</td>
+            <td>${input(index, "signedToday", row.signedToday)}</td>
+            <td class="process-cell">${fmt(result.needSale)}</td>
+            <td class="process-cell">${fmt(result.signedTurnover)}</td>
+            <td class="result-cell">${fmt(result.canOrder)}</td>
+            <td class="result-cell">${fmt(result.afterOrderStock)}</td>
+            <td class="result-cell">${fmt(result.afterOrderTurnover)}</td>
+            <td class="${statusClass}">${result.status}</td>
+            <td><button class="btn" data-delete="${index}">删除</button></td>
+          </tr>
+        `;
+      }).join("");
+      updateSingleCards();
+    };
+
+    const render = () => {
+      syncGlobalInputs();
+      renderRows();
+      save();
+    };
+
+    const setGlobal = (key, value) => {
+      state.globals[key] = toNumber(value);
+      render();
+    };
+
+    const csvEscape = (value) => `"${String(value ?? "").replaceAll('"', '""')}"`;
+
+    const exportCsv = () => {
+      const headers = [
+        "序号", "经销商名称", "现有库存N", "当前周转M", "目标周转", "上单后上限", "今日已签收",
+        "近24天销量S", "需卖/降库", "签收后周转", "可上单", "上单后库存", "上单后周转", "提示"
+      ];
+      const lines = [headers.map(csvEscape).join(",")];
+      state.rows.forEach((row, index) => {
+        const result = calculateRow(row);
+        lines.push([
+          index + 1,
+          row.dealer,
+          row.stock,
+          row.currentDays,
+          row.targetDays,
+          row.orderLimitDays,
+          row.signedToday,
+          result.sales24,
+          result.needSale,
+          result.signedTurnover,
+          result.canOrder,
+          result.afterOrderStock,
+          result.afterOrderTurnover,
+          result.status
+        ].map(csvEscape).join(","));
+      });
+      const blob = new Blob(["\uFEFF" + lines.join("\n")], { type: "text/csv;charset=utf-8" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "周转天数计算结果.csv";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    };
+
+    els.packSize.addEventListener("input", (event) => setGlobal("packSize", event.target.value));
+    els.palletTon.addEventListener("input", (event) => setGlobal("palletTon", event.target.value));
+    els.truckTon.addEventListener("input", (event) => setGlobal("truckTon", event.target.value));
+
+    els.rows.addEventListener("input", (event) => {
+      const target = event.target;
+      const rowIndex = Number(target.dataset.row);
+      const key = target.dataset.key;
+      if (!Number.isInteger(rowIndex) || !key) return;
+      state.rows[rowIndex][key] = key === "dealer" ? target.value : toNumber(target.value);
+      render();
+    });
+
+    els.rows.addEventListener("click", (event) => {
+      const index = Number(event.target.dataset.delete);
+      if (!Number.isInteger(index)) return;
+      state.rows.splice(index, 1);
+      if (!state.rows.length) state.rows.push({ dealer: "", stock: 0, currentDays: 1, targetDays: 1, orderLimitDays: 1, signedToday: 0 });
+      render();
+    });
+
+    els.addRow.addEventListener("click", () => {
+      state.rows.push({ dealer: "", stock: 0, currentDays: 1, targetDays: 1, orderLimitDays: 1, signedToday: 0 });
+      render();
+    });
+
+    els.loadSample.addEventListener("click", () => {
+      state.rows = structuredClone(sampleRows);
+      state.globals = { packSize: 180, palletTon: 1.481, truckTon: 32.5 };
+      render();
+    });
+
+    els.clearAll.addEventListener("click", () => {
+      state.rows = [{ dealer: "", stock: 0, currentDays: 1, targetDays: 1, orderLimitDays: 1, signedToday: 0 }];
+      render();
+    });
+
+    els.exportCsv.addEventListener("click", exportCsv);
+
+    load();
+    render();
+  </script>
+</body>
+</html>
